@@ -1,5 +1,5 @@
-#Inspired from https://github.com/MicrocontrollersAndMore/OpenCV_3_KNN_Character_Recognition_Python
-
+# Inspired from https://github.com/MicrocontrollersAndMore/OpenCV_3_KNN_Character_Recognition_Python
+# ş => s, ğ => g, : => -
 import cv2
 import numpy as numpy
 from matplotlib import pyplot as plt
@@ -7,12 +7,12 @@ import pytesseract as pyt
 import numpy as np
 from PIL import Image
 
-MIN_COUNTOUR_AREA = 100
+MIN_COUNTOUR_AREA = 15
 RESIZED_IMAGE_WIDTH = 20
 RESIZED_IMAGE_HEIGHT = 30
 
 def main():
-    originalImage = cv2.imread("fonts/abadi.png")
+    originalImage = cv2.imread("dots.png")
     grayScaleImage = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY) # Grayscale
     # 5x5 Kernel (smoothing window, width - height), 0 sigma => sigma value, determines how much the image will be blurred, zero makes function chooses the sigma value
     blurImage = cv2.GaussianBlur(grayScaleImage, (5,5), 0) 
@@ -20,8 +20,12 @@ def main():
     thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     cv2.imshow("Threshold Image", thresholdImage)
     thresholdImageCopy = thresholdImage
+    # Segmentation is added for two part letters: i, ü, ö etc.
+    #rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 20)) # points
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 10)) # Capital
+    threshed = cv2.morphologyEx(thresholdImageCopy, cv2.MORPH_CLOSE, rect_kernel)
     # retr_external = gives outermost contours only, 
-    contours, hierarchy = cv2.findContours(thresholdImageCopy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # these are our training images, due to the data types that the KNN object KNearest requires, we have to declare a single Mat,
     # then append to it as though it's a vector, also we will have to perform some conversions before writing to file later
     npaFlattenedImages = np.empty((0, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
@@ -33,7 +37,7 @@ def main():
                      ord('e'), ord('f'), ord('g'), ord('ğ'), ord('h'), ord('ı'), ord('i'),
                      ord('j'), ord('k'), ord('l'), ord('m'), ord('n'), ord('o'), ord('ö'), ord('p'), ord('r'), ord('s'), ord('ş'),
                      ord('t'),ord('u'), ord('ü'), ord('v'), ord('y'), ord('z'), 
-                     ord('.'), ord(','), ord('!'), ord('?'), ord(':'), ord(';')]
+                     ord('.'), ord(','), ord('!'), ord('?'), ord(':'), ord(';'), ord('-'), ord('*')]
     for contour in contours:
         print(cv2.contourArea(contour))
         if cv2.contourArea(contour) > MIN_COUNTOUR_AREA:
@@ -57,8 +61,8 @@ def main():
     # end for
     fltClassifications = np.array(intClassifications, np.float32)
     npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))
-    np.savetxt("classifications/abadi_classifications.yml", npaClassifications)           # write flattened images to file
-    np.savetxt("flattened/abadi_flattened_images.yml", npaFlattenedImages)          #
+    np.savetxt("classifications/dots.txt", npaClassifications)           # write flattened images to file
+    np.savetxt("flattened/dots.txt", npaFlattenedImages)
     cv2.destroyAllWindows()             # remove windows from memory
     return
 
