@@ -17,7 +17,7 @@ RESIZED_IMAGE_WIDTH = 20
 RESIZED_IMAGE_HEIGHT = 30
 
 def main():
-    originalImage = cv2.imread("fonts/abadi_points.png")
+    originalImage = cv2.imread("fonts/altarikh_points.png")
     grayScaleImage = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY) # Grayscale
     # 5x5 Kernel (smoothing window, width - height), 0 sigma => sigma value, determines how much the image will be blurred, zero makes function chooses the sigma value
     blurImage = cv2.GaussianBlur(grayScaleImage, (5,5), 0) 
@@ -25,7 +25,7 @@ def main():
     thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     thresholdImageCopy = thresholdImage
     # Segmentation is added for two part letters: i, ü, ö etc.
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 20)) # points
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # points
     #rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # Capital
     threshed = cv2.morphologyEx(thresholdImageCopy, cv2.MORPH_CLOSE, rect_kernel)
     # retr_external = gives outermost contours only, 
@@ -75,8 +75,8 @@ def main():
     # end for
     fltClassifications = np.array(intClassifications, np.float32)
     npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))
-    np.savetxt("classifications/abadi_points.txt", npaClassifications)           # write flattened images to file
-    np.savetxt("flattened/abadi_points.txt", npaFlattenedImages)
+    np.savetxt("classifications/altarikh_points.txt", npaClassifications)           # write flattened images to file
+    np.savetxt("flattened/altarikh_points.txt", npaFlattenedImages)
     cv2.destroyAllWindows()             # remove windows from memory
     return
 

@@ -49,7 +49,7 @@ def main():
     classifications = classifications.reshape((classifications.size, 1))
     kNearest = cv2.ml.KNearest_create()
     kNearest.train(flattenedImages, cv2.ml.ROW_SAMPLE, classifications)
-    testingImage = cv2.imread('letters.png')
+    testingImage = cv2.imread('numbers.png')
     if testingImage is None:
         print("Cannot Open Testing Image")
         os.system("pause")
@@ -65,7 +65,7 @@ def main():
                                       11,                                   # size of a pixel neighborhood used to calculate threshold value
                                       2)                                    # constant subtracted from the mean or weighted mean
     imgThresh1 = imgThresh.copy()
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 20)) # Capital
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # Capital
     imgThresh1 = cv2.morphologyEx(imgThresh1, cv2.MORPH_CLOSE, rect_kernel)
     contours, hierarchy = cv2.findContours(imgThresh1,             # input image, make sure to use a copy since the function will modify this image in the course of finding contours
                                                  cv2.RETR_EXTERNAL,         # retrieve the outermost contours only
