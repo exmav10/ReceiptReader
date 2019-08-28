@@ -1,28 +1,32 @@
 # Inspired from https://github.com/MicrocontrollersAndMore/OpenCV_3_KNN_Character_Recognition_Python
-# ş => s, ğ => g, : => -
+# ş (351) => - (45)
+# ı (305) => * (42)
+# ğ (287) => < (60)
+# : (58)  => q (113)
+
 import cv2
 import numpy as numpy
 from matplotlib import pyplot as plt
 import pytesseract as pyt
 import numpy as np
 from PIL import Image
+import sys
 
 MIN_COUNTOUR_AREA = 15
 RESIZED_IMAGE_WIDTH = 20
 RESIZED_IMAGE_HEIGHT = 30
 
 def main():
-    originalImage = cv2.imread("dots.png")
+    originalImage = cv2.imread("fonts/abadi_points.png")
     grayScaleImage = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY) # Grayscale
     # 5x5 Kernel (smoothing window, width - height), 0 sigma => sigma value, determines how much the image will be blurred, zero makes function chooses the sigma value
     blurImage = cv2.GaussianBlur(grayScaleImage, (5,5), 0) 
     # input image, 255 => make pixels that pass the threshold full white, THRESH_BINARY_INV => white foreground - black background
     thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-    cv2.imshow("Threshold Image", thresholdImage)
     thresholdImageCopy = thresholdImage
     # Segmentation is added for two part letters: i, ü, ö etc.
-    #rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 20)) # points
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 10)) # Capital
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 20)) # points
+    #rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # Capital
     threshed = cv2.morphologyEx(thresholdImageCopy, cv2.MORPH_CLOSE, rect_kernel)
     # retr_external = gives outermost contours only, 
     contours, hierarchy = cv2.findContours(threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -37,22 +41,32 @@ def main():
                      ord('e'), ord('f'), ord('g'), ord('ğ'), ord('h'), ord('ı'), ord('i'),
                      ord('j'), ord('k'), ord('l'), ord('m'), ord('n'), ord('o'), ord('ö'), ord('p'), ord('r'), ord('s'), ord('ş'),
                      ord('t'),ord('u'), ord('ü'), ord('v'), ord('y'), ord('z'), 
-                     ord('.'), ord(','), ord('!'), ord('?'), ord(':'), ord(';'), ord('-'), ord('*')]
+                     ord('.'), ord(','), ord('!'), ord('?'), ord(':'), ord(';'), ord('-'), ord('*'), ord('/'), ord('<'), ord('q')]
     for contour in contours:
-        print(cv2.contourArea(contour))
+        # print(cv2.contourArea(contour))
         if cv2.contourArea(contour) > MIN_COUNTOUR_AREA:
             [intX, intY, intW, intH] = cv2.boundingRect(contour)
             cv2.rectangle(originalImage, (intX, intY), (intX + intW, intY + intH), (0,0,255), 2) # 2 thickness
             imgROI = thresholdImage[intY:intY+intH, intX:intX+intW]
             imgROIResized = cv2.resize(imgROI, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
-            cv2.imshow("imgROI", imgROI)
-            cv2.imshow("imgROIResized", imgROIResized)
+            #cv2.imshow("imgROI", imgROI)
+            #cv2.imshow("imgROIResized", imgROIResized)a
             cv2.imshow("Original Training Image", originalImage)
             intChar = cv2.waitKey(0)
             if intChar == 27: # esc
                 sys.exit()
             elif intChar in intValidChars:
-                intClassifications.append(intChar)
+                intCharToSave = intChar
+                if intChar == 45: # - => ş
+                    intCharToSave = 351
+                elif intChar == 42: # * => ı
+                    intCharToSave = 305
+                elif intChar == 60: # < => ğ
+                    intCharToSave = 287
+                elif intChar == 113: # q => :
+                    intCharToSave = 58
+                print("Char to save : " + str(intCharToSave) + " " + str(chr(intCharToSave)))
+                intClassifications.append(intCharToSave)
                 npaFlattenedImage = imgROIResized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
                 npaFlattenedImages = np.append(npaFlattenedImages, npaFlattenedImage, 0)
                 cv2.rectangle(originalImage, (intX, intY), (intX + intW, intY + intH), (0,255,0), 2) # 2 thickness
@@ -61,8 +75,8 @@ def main():
     # end for
     fltClassifications = np.array(intClassifications, np.float32)
     npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))
-    np.savetxt("classifications/dots.txt", npaClassifications)           # write flattened images to file
-    np.savetxt("flattened/dots.txt", npaFlattenedImages)
+    np.savetxt("classifications/abadi_points.txt", npaClassifications)           # write flattened images to file
+    np.savetxt("flattened/abadi_points.txt", npaFlattenedImages)
     cv2.destroyAllWindows()             # remove windows from memory
     return
 
