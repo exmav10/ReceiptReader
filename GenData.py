@@ -22,11 +22,10 @@ def main():
     # 5x5 Kernel (smoothing window, width - height), 0 sigma => sigma value, determines how much the image will be blurred, zero makes function chooses the sigma value
     blurImage = cv2.GaussianBlur(grayScaleImage, (5,5), 0) 
     # input image, 255 => make pixels that pass the threshold full white, THRESH_BINARY_INV => white foreground - black background
-    thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     thresholdImageCopy = thresholdImage
     # Segmentation is added for two part letters: i, ü, ö etc.
     rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # points
-    #rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # Capital
     threshed = cv2.morphologyEx(thresholdImageCopy, cv2.MORPH_CLOSE, rect_kernel)
     # retr_external = gives outermost contours only, 
     contours, hierarchy = cv2.findContours(threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -43,14 +42,11 @@ def main():
                      ord('t'),ord('u'), ord('ü'), ord('v'), ord('y'), ord('z'), 
                      ord('.'), ord(','), ord('!'), ord('?'), ord(':'), ord(';'), ord('-'), ord('*'), ord('/'), ord('<'), ord('q')]
     for contour in contours:
-        # print(cv2.contourArea(contour))
         if cv2.contourArea(contour) > MIN_COUNTOUR_AREA:
             [intX, intY, intW, intH] = cv2.boundingRect(contour)
             cv2.rectangle(originalImage, (intX, intY), (intX + intW, intY + intH), (0,0,255), 2) # 2 thickness
             imgROI = thresholdImage[intY:intY+intH, intX:intX+intW]
             imgROIResized = cv2.resize(imgROI, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
-            #cv2.imshow("imgROI", imgROI)
-            #cv2.imshow("imgROIResized", imgROIResized)a
             cv2.imshow("Original Training Image", originalImage)
             intChar = cv2.waitKey(0)
             if intChar == 27: # esc
@@ -68,16 +64,16 @@ def main():
                 print("Char to save : " + str(intCharToSave) + " " + str(chr(intCharToSave)))
                 intClassifications.append(intCharToSave)
                 npaFlattenedImage = imgROIResized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
-                npaFlattenedImages = np.append(npaFlattenedImages, npaFlattenedImage, 0)
-                cv2.rectangle(originalImage, (intX, intY), (intX + intW, intY + intH), (0,255,0), 2) # 2 thickness
+                npaFlattenedImages = np.append(npaFlattenedImages, npaFlattenedImage, 0) # TODO: LEARN 0
+                cv2.rectangle(originalImage, (intX, intY), (intX + intW, intY + intH), (0,255,0), 2)
             # end if
         # end if
     # end for
-    fltClassifications = np.array(intClassifications, np.float32)
-    npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))
-    np.savetxt("classifications/altarikh_points.txt", npaClassifications)           # write flattened images to file
-    np.savetxt("flattened/altarikh_points.txt", npaFlattenedImages)
-    cv2.destroyAllWindows()             # remove windows from memory
+    fltClassifications = np.array(intClassifications, np.float32) # Convert int to float
+    npaClassifications = fltClassifications.reshape((fltClassifications.size, 1)) # 
+    np.savetxt("classifications/altarikh_points.txt", npaClassifications)
+    np.savetxt("flattened/altarikh_points.txt", npaFlattenedImages) 
+    cv2.destroyAllWindows()
     return
 
 if __name__ == "__main__":

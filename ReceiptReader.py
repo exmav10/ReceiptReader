@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import operator
-import os
+import sys
 
 MIN_COUNTOUR_AREA = 15
 RESIZED_IMAGE_WIDTH = 20
@@ -10,94 +10,96 @@ RESIZED_IMAGE_HEIGHT = 30
 class ContourWithData():
     npaContour = None
     boundingRect = None
-    intRectX = 0
-    intRectY = 0
-    intRectWidth = 0
-    intRectHeight = 0
-    fltArea = 0.0
+    intX = 0
+    intY = 0
+    intWidth = 0
+    intHeight = 0
+    area = 0.0
 
-    def calculateRectTopLeftPoint(self):
+    def fillContourData(self):
         [intX, intY, intWidth, intHeight] = self.boundingRect
-        self.intRectX = intX
-        self.intRectY = intY
-        self.intRectWidth = intWidth
-        self.intRectHeight = intHeight
+        self.intX = intX
+        self.intY = intY
+        self.intWidth = intWidth
+        self.intHeight = intHeight
 
-    def isContourValid(self):
-        if self.fltArea < MIN_COUNTOUR_AREA: return False
+    # Looks contour area.
+    def isContourValid(self): 
+        if self.area < MIN_COUNTOUR_AREA: return False
         return True
 
 def main():
-    
-    allContoursWithData = []
-    validContoursWithData = []
 
     try:
         classifications = np.loadtxt("classifications.txt", np.float32)
     except:
-        print("Cannot Read Classifications \n") 
-        os.system("pause")
-        return
+        print("Cannot Read Classifications") 
+        sys.exit()
     
     try:
         flattenedImages = np.loadtxt("flattened.txt", np.float32)                 # read in training images
     except:
-        print("Cannot Read Flattened Images \n") 
-        os.system("pause")
-        return
+        print("Cannot Read Flattened Images") 
+        sys.exit()
     
-    classifications = classifications.reshape((classifications.size, 1))
-    kNearest = cv2.ml.KNearest_create()
-    kNearest.train(flattenedImages, cv2.ml.ROW_SAMPLE, classifications)
-    testingImage = cv2.imread('numbers.png')
+    classifications = classifications.reshape((classifications.size, 1)) # Classifications
+    kNearest = cv2.ml.KNearest_create() # Create knearest element
+    kNearest.train(flattenedImages, cv2.ml.ROW_SAMPLE, classifications) # Train knearest element with classification and flattened images
+
+    # TODO: Learn how to save knearest into a file to seperate train and test files.
+
+    # TESTING PART
+    validContoursWithData = []
+
+    testingImage = cv2.imread('letters.png')
     if testingImage is None:
-        print("Cannot Open Testing Image")
-        os.system("pause")
+        print("Please Enter Valid Test Image")
+        sys.exit()
         return
     # end if
     
+    # Make image readeble
     imgGray = cv2.cvtColor(testingImage, cv2.COLOR_BGR2GRAY)
-    imgBlur = cv2.GaussianBlur(imgGray, (5,5), 0)
+    imgBlur = cv2.GaussianBlur(imgGray, (5,5), 0) # TODO: Learn (5,5) and 0
     imgThresh = cv2.adaptiveThreshold(imgBlur,                           # input image
                                       255,                                  # make pixels that pass the threshold full white
                                       cv2.ADAPTIVE_THRESH_GAUSSIAN_C,       # use gaussian rather than mean, seems to give better results
                                       cv2.THRESH_BINARY_INV,                # invert so foreground will be white, background will be black
                                       11,                                   # size of a pixel neighborhood used to calculate threshold value
                                       2)                                    # constant subtracted from the mean or weighted mean
-    imgThresh1 = imgThresh.copy()
+    imgThresh1 = imgThresh.copy() # Copy image, findcontours modifies it and we need the main image while finding imageROI
+    # Segmentation is added for two part letters: i, ü, ö etc.
     rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # Capital
     imgThresh1 = cv2.morphologyEx(imgThresh1, cv2.MORPH_CLOSE, rect_kernel)
-    contours, hierarchy = cv2.findContours(imgThresh1,             # input image, make sure to use a copy since the function will modify this image in the course of finding contours
-                                                 cv2.RETR_EXTERNAL,         # retrieve the outermost contours only
+    
+    contours, hierarchy = cv2.findContours(imgThresh1, cv2.RETR_EXTERNAL,
                                                  cv2.CHAIN_APPROX_SIMPLE) # compress horizontal, vertical, and diagonal segments and leave only their end points
     
     for npaContour in contours:
         contourWithData = ContourWithData()
         contourWithData.npaContour = npaContour
         contourWithData.boundingRect = cv2.boundingRect(contourWithData.npaContour)
-        contourWithData.calculateRectTopLeftPoint()
-        contourWithData.fltArea = cv2.contourArea(contourWithData.npaContour)
-        allContoursWithData.append(contourWithData)
-    # end for
-
-    for contourWithData in allContoursWithData:                 
+        contourWithData.fillContourData()
+        contourWithData.area = cv2.contourArea(contourWithData.npaContour)
         if contourWithData.isContourValid():
             validContoursWithData.append(contourWithData)
-        # end if
+        # end if 
     # end for
 
-    validContoursWithData.sort(key = operator.attrgetter("intRectX"))
-
+    # TODO: Lining operation should come here
+    validContoursWithData.sort(key = operator.attrgetter("intX"))
+    
     finalText = ""
     for contourWithData in validContoursWithData:
+        # Draw Rectangle
         cv2.rectangle(testingImage, 
-                        (contourWithData.intRectX, contourWithData.intRectY), 
-                        (contourWithData.intRectX + contourWithData.intRectWidth, contourWithData.intRectY + contourWithData.intRectHeight),
-                        (0, 255, 0),
-                        2)
+                        (contourWithData.intX, contourWithData.intY), 
+                        (contourWithData.intX + contourWithData.intWidth, contourWithData.intY + contourWithData.intHeight),
+                        (0, 255, 0), # Color 
+                        2) # Thickness 
         # crop char out of threshold image
-        imgROI = imgThresh[contourWithData.intRectY : contourWithData.intRectY + contourWithData.intRectHeight, 
-                            contourWithData.intRectX : contourWithData.intRectX + contourWithData.intRectWidth]
+        imgROI = imgThresh[contourWithData.intY : contourWithData.intY + contourWithData.intHeight, 
+                            contourWithData.intX : contourWithData.intX + contourWithData.intWidth]
         # resize image, this will be more consistent for recognition and storage
         imgROIResized = cv2.resize(imgROI, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
         # flatten image into 1d numpy array
@@ -105,13 +107,14 @@ def main():
         # convert from 1d numpy array of ints to 1d numpy array of floats
         npaRIOResized = np.float32(npaRIOResized)
         # call KNN function find_nearest
+        # TODO: (AYDIN)
         retval, npaResults, neigh_resp, dists = kNearest.findNearest(npaRIOResized, k = 1)
         # get character from results
         strCurrentChar = str(chr(int(npaResults[0][0])))
         finalText = finalText + strCurrentChar
     # end for
     print("\n" + finalText + "\n")
-    cv2.imshow("testingImage", testingImage)
+    cv2.imshow("Receipt Reader", testingImage)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
     return
