@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import operator
 import sys
+import math
 
 MIN_COUNTOUR_AREA = 15
 RESIZED_IMAGE_WIDTH = 20
@@ -10,26 +11,27 @@ RESIZED_IMAGE_HEIGHT = 30
 class ContourWithData():
     npaContour = None
     boundingRect = None
-    intX = 0
-    intY = 0
-    intWidth = 0
-    intHeight = 0
+    x = 0 # left X
+    y = 0 # top y
+    width = 0
+    height = 0
     area = 0.0
+    comparePoint = 0 # distance to the top left of the image
 
     def fillContourData(self):
         [intX, intY, intWidth, intHeight] = self.boundingRect
-        self.intX = intX
-        self.intY = intY
-        self.intWidth = intWidth
-        self.intHeight = intHeight
+        self.x = intX
+        self.y = intY
+        self.width = intWidth
+        self.height = intHeight
+        self.comparePoint = self.y + (0.09 * self.x)
 
     # Looks contour area.
     def isContourValid(self): 
         if self.area < MIN_COUNTOUR_AREA: return False
-        return True
+        return True        
 
 def main():
-
     try:
         classifications = np.loadtxt("classifications.txt", np.float32)
     except:
@@ -44,14 +46,14 @@ def main():
     
     classifications = classifications.reshape((classifications.size, 1)) # Classifications
     kNearest = cv2.ml.KNearest_create() # Create knearest element
+    # traindata, responses, sampleidx
     kNearest.train(flattenedImages, cv2.ml.ROW_SAMPLE, classifications) # Train knearest element with classification and flattened images
-
-    # TODO: Learn how to save knearest into a file to seperate train and test files.
+    
 
     # TESTING PART
     validContoursWithData = []
 
-    testingImage = cv2.imread('letters.png')
+    testingImage = cv2.imread('test_images/abadi_capital.png')
     if testingImage is None:
         print("Please Enter Valid Test Image")
         sys.exit()
@@ -87,19 +89,36 @@ def main():
     # end for
 
     # TODO: Lining operation should come here
-    validContoursWithData.sort(key = operator.attrgetter("intX"))
+    validContoursWithData.sort(key = operator.attrgetter("y"), reverse = False) 
+    # End of main
+    def sortingAlgorithm(): 
+        didChanged = False
+        for i in range(len(validContoursWithData) - 1 ):
+            firstValue = validContoursWithData[i]
+            secondValue = validContoursWithData[i+1]
+            if (secondValue.y - firstValue.y <= 20):
+                print("First Y: " + str(firstValue.y) + "   " + "Second Y: " + str(secondValue.y))
+                # they are in the same line, compare x values
+                if firstValue.x > secondValue.x: # first value should be move right 
+                    validContoursWithData[i] = secondValue
+                    validContoursWithData[i+1] = firstValue
+                    didChanged = True
+        if didChanged:
+            sortingAlgorithm()
+            
+    sortingAlgorithm()
     
     finalText = ""
     for contourWithData in validContoursWithData:
         # Draw Rectangle
         cv2.rectangle(testingImage, 
-                        (contourWithData.intX, contourWithData.intY), 
-                        (contourWithData.intX + contourWithData.intWidth, contourWithData.intY + contourWithData.intHeight),
-                        (0, 255, 0), # Color 
-                        2) # Thickness 
+                    (contourWithData.x, contourWithData.y), 
+                    (contourWithData.x + contourWithData.width, contourWithData.y + contourWithData.height),
+                    (0, 255, 0), # Color 
+                    2) # Thickness 
         # crop char out of threshold image
-        imgROI = imgThresh[contourWithData.intY : contourWithData.intY + contourWithData.intHeight, 
-                            contourWithData.intX : contourWithData.intX + contourWithData.intWidth]
+        imgROI = imgThresh[contourWithData.y : contourWithData.y + contourWithData.height, 
+                            contourWithData.x : contourWithData.x + contourWithData.width]
         # resize image, this will be more consistent for recognition and storage
         imgROIResized = cv2.resize(imgROI, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
         # flatten image into 1d numpy array
@@ -114,12 +133,12 @@ def main():
         finalText = finalText + strCurrentChar
     # end for
     print("\n" + finalText + "\n")
-    cv2.imshow("Receipt Reader", testingImage)
+    '''cv2.imshow("Receipt Reader", testingImage)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.destroyAllWindows()'''
     return
-    # End of main
-
+    
+    
 if __name__ == "__main__":
     main()
 # end if

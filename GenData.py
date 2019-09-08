@@ -17,12 +17,13 @@ RESIZED_IMAGE_WIDTH = 20
 RESIZED_IMAGE_HEIGHT = 30
 
 def main():
-    originalImage = cv2.imread("fonts/altarikh_points.png")
+    print(np.float32(105))
+    originalImage = cv2.imread("training_chars.png")
     grayScaleImage = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY) # Grayscale
     # 5x5 Kernel (smoothing window, width - height), 0 sigma => sigma value, determines how much the image will be blurred, zero makes function chooses the sigma value
     blurImage = cv2.GaussianBlur(grayScaleImage, (5,5), 0) 
     # input image, 255 => make pixels that pass the threshold full white, THRESH_BINARY_INV => white foreground - black background
-    thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+    thresholdImage = cv2.adaptiveThreshold(blurImage, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
     thresholdImageCopy = thresholdImage
     # Segmentation is added for two part letters: i, ü, ö etc.
     rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # points
@@ -64,13 +65,13 @@ def main():
                 print("Char to save : " + str(intCharToSave) + " " + str(chr(intCharToSave)))
                 intClassifications.append(intCharToSave)
                 npaFlattenedImage = imgROIResized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
-                npaFlattenedImages = np.append(npaFlattenedImages, npaFlattenedImage, 0) # TODO: LEARN 0
+                npaFlattenedImages = np.append(npaFlattenedImages, npaFlattenedImage, 0) # 0 puts new element in another row in matrix
                 cv2.rectangle(originalImage, (intX, intY), (intX + intW, intY + intH), (0,255,0), 2)
             # end if
         # end if
     # end for
     fltClassifications = np.array(intClassifications, np.float32) # Convert int to float
-    npaClassifications = fltClassifications.reshape((fltClassifications.size, 1)) # 
+    npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))
     np.savetxt("classifications/altarikh_points.txt", npaClassifications)
     np.savetxt("flattened/altarikh_points.txt", npaFlattenedImages) 
     cv2.destroyAllWindows()
