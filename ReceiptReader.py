@@ -4,7 +4,7 @@ import operator
 import sys
 import math
 
-MIN_COUNTOUR_AREA = 15
+MIN_COUNTOUR_AREA = 5
 RESIZED_IMAGE_WIDTH = 20
 RESIZED_IMAGE_HEIGHT = 30
 
@@ -16,7 +16,8 @@ class ContourWithData():
     width = 0
     height = 0
     area = 0.0
-    comparePoint = 0 # distance to the top left of the image
+    isNewLine = False
+    isSpace = False
 
     def fillContourData(self):
         [intX, intY, intWidth, intHeight] = self.boundingRect
@@ -24,7 +25,6 @@ class ContourWithData():
         self.y = intY
         self.width = intWidth
         self.height = intHeight
-        self.comparePoint = self.y + (0.09 * self.x)
 
     # Looks contour area.
     def isContourValid(self): 
@@ -53,7 +53,7 @@ def main():
     # TESTING PART
     validContoursWithData = []
 
-    testingImage = cv2.imread('test_images/abadi_capital.png')
+    testingImage = cv2.imread('test_images/two_lines.png')
     if testingImage is None:
         print("Please Enter Valid Test Image")
         sys.exit()
@@ -71,7 +71,7 @@ def main():
                                       2)                                    # constant subtracted from the mean or weighted mean
     imgThresh1 = imgThresh.copy() # Copy image, findcontours modifies it and we need the main image while finding imageROI
     # Segmentation is added for two part letters: i, ü, ö etc.
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 12)) # Capital
+    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 15)) # Capital
     imgThresh1 = cv2.morphologyEx(imgThresh1, cv2.MORPH_CLOSE, rect_kernel)
     
     contours, hierarchy = cv2.findContours(imgThresh1, cv2.RETR_EXTERNAL,
@@ -88,7 +88,6 @@ def main():
         # end if 
     # end for
 
-    # TODO: Lining operation should come here
     validContoursWithData.sort(key = operator.attrgetter("y"), reverse = False) 
     # End of main
     def sortingAlgorithm(): 
@@ -97,7 +96,6 @@ def main():
             firstValue = validContoursWithData[i]
             secondValue = validContoursWithData[i+1]
             if (secondValue.y - firstValue.y <= 20):
-                print("First Y: " + str(firstValue.y) + "   " + "Second Y: " + str(secondValue.y))
                 # they are in the same line, compare x values
                 if firstValue.x > secondValue.x: # first value should be move right 
                     validContoursWithData[i] = secondValue
@@ -108,6 +106,15 @@ def main():
             
     sortingAlgorithm()
     
+    for i in range(len(validContoursWithData) - 1):
+        firstValue = validContoursWithData[i]
+        secondValue = validContoursWithData[i + 1]
+        if firstValue.y + firstValue.height < secondValue.y: # Control for new line
+            firstValue.isNewLine = True
+        
+        if firstValue.x + firstValue.width + 4 < secondValue.x:
+            firstValue.isSpace = True
+
     finalText = ""
     for contourWithData in validContoursWithData:
         # Draw Rectangle
@@ -131,11 +138,15 @@ def main():
         # get character from results
         strCurrentChar = str(chr(int(npaResults[0][0])))
         finalText = finalText + strCurrentChar
+        if contourWithData.isSpace:
+            finalText = finalText + " "
+        if contourWithData.isNewLine:
+            finalText = finalText + "\n"
     # end for
     print("\n" + finalText + "\n")
-    '''cv2.imshow("Receipt Reader", testingImage)
+    cv2.imshow("Receipt Reader", testingImage)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()'''
+    cv2.destroyAllWindows()
     return
     
     

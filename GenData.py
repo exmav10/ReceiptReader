@@ -18,7 +18,7 @@ RESIZED_IMAGE_HEIGHT = 30
 
 def main():
     print(np.float32(105))
-    originalImage = cv2.imread("training_chars.png")
+    originalImage = cv2.imread("test_images/two_lines.png")
     grayScaleImage = cv2.cvtColor(originalImage, cv2.COLOR_BGR2GRAY) # Grayscale
     # 5x5 Kernel (smoothing window, width - height), 0 sigma => sigma value, determines how much the image will be blurred, zero makes function chooses the sigma value
     blurImage = cv2.GaussianBlur(grayScaleImage, (5,5), 0) 
