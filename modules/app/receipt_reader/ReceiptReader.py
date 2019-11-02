@@ -1,8 +1,9 @@
-import cv2
+import cv2 #4.1.0
 import numpy as np
 import operator
 import sys
 import math
+# run command => /Library/Frameworks/Python.framework/Versions/3.7/bin/python3 /Users/aydunal/Desktop/PythonCodes/ReceiptReader/GenData.py
 
 MIN_COUNTOUR_AREA = 5
 RESIZED_IMAGE_WIDTH = 20
@@ -33,13 +34,13 @@ class ContourWithData():
 
 def main():
     try:
-        classifications = np.loadtxt("classifications.txt", np.float32)
+        classifications = np.loadtxt("modules/app/receipt_reader/classifications.txt", np.float32)
     except:
         print("Cannot Read Classifications") 
         sys.exit()
     
     try:
-        flattenedImages = np.loadtxt("flattened.txt", np.float32)                 # read in training images
+        flattenedImages = np.loadtxt("modules/app/receipt_reader/flattened.txt", np.float32)                 # read in training images
     except:
         print("Cannot Read Flattened Images") 
         sys.exit()
