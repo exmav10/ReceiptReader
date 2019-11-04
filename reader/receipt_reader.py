@@ -32,33 +32,34 @@ class ContourWithData():
         if self.area < MIN_COUNTOUR_AREA: return False
         return True        
 
-def main():
+def getImageResponse():
     try:
-        classifications = np.loadtxt("modules/app/receipt_reader/classifications.txt", np.float32)
+        classifications = np.loadtxt("reader/classifications.txt", np.float32)
     except:
         print("Cannot Read Classifications") 
-        sys.exit()
+        return "Cannot Read Classifications"
+        #sys.exit()
     
     try:
-        flattenedImages = np.loadtxt("modules/app/receipt_reader/flattened.txt", np.float32)                 # read in training images
+        flattenedImages = np.loadtxt("reader/flattened.txt", np.float32)                 # read in training images
     except:
         print("Cannot Read Flattened Images") 
+        return "Cannot Read Flattened Images"
         sys.exit()
-    
+
     classifications = classifications.reshape((classifications.size, 1)) # Classifications
     kNearest = cv2.ml.KNearest_create() # Create knearest element
     # traindata, responses, sampleidx
     kNearest.train(flattenedImages, cv2.ml.ROW_SAMPLE, classifications) # Train knearest element with classification and flattened images
     
-
     # TESTING PART
     validContoursWithData = []
 
     testingImage = cv2.imread('test_images/two_lines.png')
     if testingImage is None:
         print("Please Enter Valid Test Image")
-        sys.exit()
-        return
+        return "Please Enter Valid Test Image"
+        #sys.exit()
     # end if
     
     # Make image readeble
@@ -144,13 +145,12 @@ def main():
         if contourWithData.isNewLine:
             finalText = finalText + "\n"
     # end for
-    print("\n" + finalText + "\n")
-    cv2.imshow("Receipt Reader", testingImage)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    return
+    return "\n" + finalText + "\n"
+    #cv2.imshow("Receipt Reader", testingImage)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+
     
-    
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
 # end if

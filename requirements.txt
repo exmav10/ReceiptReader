@@ -1,3 +1,4 @@
 Flask==0.12.2
 requests==2.18.1
-cv2==4.1.0
+opencv-python
+cherrypy==13.1.0
