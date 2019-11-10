@@ -56,6 +56,7 @@ def getImageResponse():
     validContoursWithData = []
 
     testingImage = cv2.imread('test_images/two_lines.png')
+    testingImage = cv2.imread('/usr/src/app/image_from_ios.jpg')
     if testingImage is None:
         print("Please Enter Valid Test Image")
         return "Please Enter Valid Test Image"
