@@ -1,7 +1,5 @@
 import logging
 import cherrypy
-#from backend.config import API_CONNECTION
-#from backend.logger import setup_logging
 from flask import Flask, jsonify, make_response, request
 from config import API_CONNECTION
 from reader.receipt_reader import getImageResponse
@@ -29,7 +27,7 @@ def create_app():
         #print(job)s
         file = request.files['file']
         if file:
-            filename = "image_from_ios.jpg"
+            filename = "image_from_client.jpg"
             
             # create the folders when setting up your app
             #os.makedirs('/receipt_reader/test_images', exist_ok=True)
@@ -44,6 +42,7 @@ def create_app():
 if __name__ == '__main__':
     #setup_logging()
     app = create_app()
+    # Developing a flask app on cherrypy server
     cherrypy.tree.graft(app, '/')
     cherrypy.config.update({
         'server.socket_host': API_CONNECTION['host'],
